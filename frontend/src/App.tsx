@@ -7,11 +7,18 @@ interface SentimentData {
   time_taken: number;
 }
 
+// export default function App() {
+//   const [text, setText] = useState("");
+//   const [result, setResult] = useState<SentimentData | null>(null);
+//   const [loading, setLoading] = useState(false);
+//   const apiUrl = "http://localhost:8000";
 export default function App() {
   const [text, setText] = useState("");
   const [result, setResult] = useState<SentimentData | null>(null);
   const [loading, setLoading] = useState(false);
-  const apiUrl = "http://localhost:8000";
+
+  const apiUrl = import.meta.env.VITE_API_URL;
+
 
   const analyzeSentiment = useCallback(
     async (inputText: string) => {
