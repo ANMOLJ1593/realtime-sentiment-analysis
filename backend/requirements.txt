@@ -1,8 +1,12 @@
---index-url https://download.pytorch.org/whl/cpu
---extra-index-url https://pypi.org/simple
-transformers==4.52.4
-optimum[onnxruntime]==1.26.1
-torch==2.5.1+cpu
-fastapi[standard]==0.115.13
-accelerate==1.8.1
-wandb==0.21.0
+# --index-url https://download.pytorch.org/whl/cpu
+# --extra-index-url https://pypi.org/simple
+# transformers==4.52.4
+# optimum[onnxruntime]==1.26.1
+# torch==2.5.1+cpu
+# fastapi[standard]==0.115.13
+# accelerate==1.8.1
+# wandb==0.21.0
+fastapi==0.115.13
+uvicorn[standard]
+requests
+pydantic
