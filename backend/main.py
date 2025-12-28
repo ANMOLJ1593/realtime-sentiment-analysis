@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import requests
+import time
 
 # -----------------------------
 # App Initialization
@@ -14,6 +15,7 @@ app.add_middleware(
     allow_origins=[
         "https://realtime-sentiment-analysis-frontend.onrender.com"
     ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -33,7 +35,7 @@ HF_MODEL_URL = (
 
 HEADERS = {
     "Authorization": f"Bearer {HF_API_TOKEN}",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
 }
 
 # -----------------------------
@@ -43,9 +45,10 @@ class SentimentRequest(BaseModel):
     text: str
 
 # -----------------------------
-# Inference Function
+# Inference Function (SAFE)
 # -----------------------------
 def get_sentiment(text: str):
+    start_time = time.time()
     payload = {"inputs": text}
 
     response = requests.post(
@@ -55,8 +58,28 @@ def get_sentiment(text: str):
         timeout=30
     )
 
-    response.raise_for_status()
-    return response.json()
+    # ❗ DO NOT crash FastAPI on HF errors
+    if response.status_code != 200:
+        return {
+            "error": "Hugging Face inference failed",
+            "status_code": response.status_code,
+            "details": response.text
+        }
+
+    data = response.json()
+
+    # HF normally returns a list
+    if isinstance(data, list) and len(data) > 0:
+        return {
+            "label": data[0].get("label"),
+            "score": data[0].get("score"),
+            "time_taken": int((time.time() - start_time) * 1000)
+        }
+
+    return {
+        "error": "Unexpected response format from Hugging Face",
+        "raw": data
+    }
 
 # -----------------------------
 # Routes
