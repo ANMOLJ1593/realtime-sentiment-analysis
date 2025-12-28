@@ -29,7 +29,7 @@ if not HF_API_TOKEN:
     raise RuntimeError("HF_API_TOKEN environment variable not set")
 
 HF_MODEL_URL = (
-    "https://router.huggingface.co/hf-inference/models/"
+     "https://router.huggingface.co/models/"
     "distilbert-base-uncased-finetuned-sst-2-english"
 )
 
@@ -57,22 +57,33 @@ def get_sentiment(text: str):
         timeout=30
     )
 
+    # Handle non-200 HF errors safely
     if response.status_code != 200:
+        try:
+            details = response.json()
+        except Exception:
+            details = response.text
+
         return {
             "error": "Hugging Face inference failed",
             "status_code": response.status_code,
-            "details": response.text
+            "details": details
         }
 
     data = response.json()
 
-    # Expected HF response: list of predictions
-    if isinstance(data, list) and len(data) > 0:
-        return {
-            "label": data[0]["label"],
-            "score": data[0]["score"],
-            "time_taken": int((time.time() - start_time) * 1000)
-        }
+    # Handle HF output formats
+    if isinstance(data, list):
+        # unwrap nested list if present
+        if len(data) > 0 and isinstance(data[0], list):
+            data = data[0]
+
+        if len(data) > 0 and "label" in data[0]:
+            return {
+                "label": data[0]["label"],
+                "score": data[0]["score"],
+                "time_taken": int((time.time() - start_time) * 1000)
+            }
 
     return {
         "error": "Unexpected response format",
