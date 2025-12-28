@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 # -----------------------------
-# Hugging Face Inference Config
+# Hugging Face Inference Router (NEW)
 # -----------------------------
 HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 
@@ -29,7 +29,7 @@ if not HF_API_TOKEN:
     raise RuntimeError("HF_API_TOKEN environment variable not set")
 
 HF_MODEL_URL = (
-    "https://api-inference.huggingface.co/models/"
+    "https://router.huggingface.co/hf-inference/models/"
     "distilbert-base-uncased-finetuned-sst-2-english"
 )
 
@@ -45,20 +45,18 @@ class SentimentRequest(BaseModel):
     text: str
 
 # -----------------------------
-# Inference Function (SAFE)
+# Inference Function
 # -----------------------------
 def get_sentiment(text: str):
     start_time = time.time()
-    payload = {"inputs": text}
 
     response = requests.post(
         HF_MODEL_URL,
         headers=HEADERS,
-        json=payload,
+        json={"inputs": text},
         timeout=30
     )
 
-    # ❗ DO NOT crash FastAPI on HF errors
     if response.status_code != 200:
         return {
             "error": "Hugging Face inference failed",
@@ -68,16 +66,16 @@ def get_sentiment(text: str):
 
     data = response.json()
 
-    # HF normally returns a list
+    # Expected HF response: list of predictions
     if isinstance(data, list) and len(data) > 0:
         return {
-            "label": data[0].get("label"),
-            "score": data[0].get("score"),
+            "label": data[0]["label"],
+            "score": data[0]["score"],
             "time_taken": int((time.time() - start_time) * 1000)
         }
 
     return {
-        "error": "Unexpected response format from Hugging Face",
+        "error": "Unexpected response format",
         "raw": data
     }
 
@@ -86,7 +84,7 @@ def get_sentiment(text: str):
 # -----------------------------
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the Sentiment Analysis API (HF Inference)"}
+    return {"message": "Welcome to the Sentiment Analysis API (HF Router)"}
 
 @app.post("/predict")
 def sentiment_analysis(request: SentimentRequest):
